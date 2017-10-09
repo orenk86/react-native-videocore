@@ -11,6 +11,7 @@
 @implementation RCTVideoCoreView
 
 static VCSimpleSession* session;
+static RCTEventDispatcher *eventDispatcher;
 
 #define VIDEOCORE_CURRENT_CAMERA_KEY @"currentCameraKey"
 
@@ -22,7 +23,7 @@ static VCSimpleSession* session;
   }
   
   session.delegate = self;
-  _eventDispatcher = eventDispatcher;
+  eventDispatcher = eventDispatcher;
   return [super initWithFrame:CGRectZero];
 }
 
@@ -31,7 +32,7 @@ static VCSimpleSession* session;
 {
 
   CGRect rect = [[UIScreen mainScreen] bounds];
-  CGFloat scale = [UIScreen mainScreen].scale * 2.0f;
+  CGFloat scale = [UIScreen mainScreen].scale;
   NSNumber *currentCamera = [RCTVideoCoreView getDefaultNumberFofKey:VIDEOCORE_CURRENT_CAMERA_KEY withDefaultValue:[NSNumber numberWithInteger:VCCameraStateFront]];
 
   session = [[VCSimpleSession alloc] initWithVideoSize:CGSizeMake(rect.size.height * scale, rect.size.width * scale)
@@ -53,7 +54,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
 {
   NSLog(@"---------------- REMOVE FROM SUPERVIEW");
   
-  self.eventDispatcher = nil;
+  eventDispatcher = nil;
   session.delegate = nil;
   [super removeFromSuperview];
 }
@@ -137,7 +138,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
   
   NSLog(@"%@", eventName);
   
-  [self.eventDispatcher sendDeviceEventWithName:@"videocore.connectionStatusChanged" body:eventName];
+  [eventDispatcher sendDeviceEventWithName:@"videocore.connectionStatusChanged" body:eventName];
 }
 
 +(void) toggleTorch {
@@ -148,14 +149,17 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
   if (session.cameraState == VCCameraStateBack) {
     [session setCameraState:VCCameraStateFront];
     [self saveDefaultNumber:[NSNumber numberWithInteger:VCCameraStateFront] forKey:VIDEOCORE_CURRENT_CAMERA_KEY];
+    [eventDispatcher sendDeviceEventWithName:@"videocore.cameraChanged" body:@"front"];
   } else {
     [session setCameraState:VCCameraStateBack];
     [self saveDefaultNumber:[NSNumber numberWithInteger:VCCameraStateBack] forKey:VIDEOCORE_CURRENT_CAMERA_KEY];
+    [eventDispatcher sendDeviceEventWithName:@"videocore.cameraChanged" body:@"back"];
   }
 }
 
 +(void)setResolution:(int)width andHeight:(int)height {
   [session setVideoSize:CGSizeMake(width, height)];
+  [session.previewView setFrame:[UIScreen mainScreen].bounds];
 }
 
 +(void)setBitrate:(int)bitrate {

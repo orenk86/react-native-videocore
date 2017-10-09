@@ -13,8 +13,6 @@
 
 @interface RCTVideoCoreView : UIView <VCSessionDelegate>
 
-@property (nonatomic) RCTEventDispatcher *eventDispatcher;
-
 + (void) startStream:(NSString *)streamUrl andStreamKey:(NSString *)streamKey;
 + (void) stopStream;
 
